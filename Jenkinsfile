@@ -21,9 +21,6 @@ pipeline {
             steps {
                 // Sonar code quality check
                 bat 'mvn clean package'
-                
-                // Archive artifacts
-                archiveArtifacts 'target/*.jar'
             }
         }
         
@@ -66,7 +63,7 @@ pipeline {
             }
             steps {
                 // Deploy to Tomcat if quality gate passes
-                deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://34.27.27.61:8080')], contextPath: null, jar: '**/*.jar'
+                deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://34.27.27.61:8080')], contextPath: null, war: '**/*.war'
             }
         }
     }
