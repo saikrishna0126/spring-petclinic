@@ -23,15 +23,6 @@ pipeline {
                 
                 // Archive artifacts
                 archiveArtifacts 'target/*.war'
-                
-                // Suppress Checkstyle violation related to HTTP URLs
-                script {
-                    def suppressions = 'target/checkstyle-suppressions.xml'
-                    writeFile file: suppressions, text: '<suppressions></suppressions>'
-                    echo '    <suppress checks="NoHttp" files="Jenkinsfile" />' >> suppressions
-                    step([$class: 'CheckStylePublisher', canComputeNew: false, defaultEncoding: '', healthy: '', pattern: 'target/checkstyle-result.xml', unHealthy: ''])
-                }
-                
                 // Sonar analysis
                 withSonarQubeEnv(credentialsId: 'sonar-scanner', installationName: 'sonarqube') {
                     bat """
