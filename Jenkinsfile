@@ -17,20 +17,18 @@ pipeline {
     }
     
     stages {
-        stage('git_checkout') {
-            steps {
-                git branch: 'main', url: 'https://github.com/saikrishna0126/spring-petclinic.git'
-            }
-        }
-        
-        stage('Sonar Analysis and Deploy to Tomcat') {
+        stage('Build') {
             steps {
                 // Sonar code quality check
                 bat 'mvn clean package'
                 
                 // Archive artifacts
-                archiveArtifacts 'target/*.war'
-                
+                archiveArtifacts 'target/*.jar'
+            }
+        }
+        
+        stage('Sonar Analysis') {
+            steps {
                 // Sonar analysis
                 withSonarQubeEnv(credentialsId: 'sonar-scanner', installationName: 'sonarqube') {
                     bat """
@@ -42,7 +40,11 @@ pipeline {
                     -Dsonar.java.binaries=target/classes 
                     """
                 }
-                
+            }
+        }
+        
+        stage('Quality Gate') {
+            steps {
                 // Quality Gate check
                 timeout(time: 1, unit: 'HOURS') {
                     script {
@@ -52,12 +54,19 @@ pipeline {
                         }
                         else {
                             print "Pipeline Executed successfully: ${qg.status}"
-                            
-                            // Deploy to Tomcat if quality gate passes
-                            deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://34.27.27.61:8080')], contextPath: null, war: '**/*.war'
                         }
                     }
                 }
+            }
+        }
+        
+        stage('Deploy to Tomcat') {
+            when {
+                expression { currentBuild.result == 'SUCCESS' }
+            }
+            steps {
+                // Deploy to Tomcat if quality gate passes
+                deploy adapters: [tomcat9(credentialsId: 'tomcat', path: '', url: 'http://34.27.27.61:8080')], contextPath: null, jar: '**/*.jar'
             }
         }
     }
